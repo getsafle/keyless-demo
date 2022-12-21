@@ -182,11 +182,14 @@ function App() {
     const [connect, setConnect] = useState(false);
 
     const [fromAddr, setfromAddr] = useState(false);
+    const [userBalance, setUserBalance] = useState(0)
     const [succMsg, setSuccMsg] = useState('');
     let logged = false;
 
     let [w3, setW3] = useState(null);
     let [keyless, setKeyless] = useState(false);
+
+    let [userAvailableTokens, setUserAvailableTokens] = useState([])
 
     const init = async () => {
 
@@ -217,7 +220,7 @@ function App() {
         setW3(w32)
 
         // w32.currentProvider.on('login successful', setAddress);
-        w32.currentProvider.on('login successful', callFn => setAddress(w32));
+        w32.currentProvider.on('login successful', callFn => setAddress(w32, keyless2));
         w32.currentProvider.on('transactionSuccess', successTrans);
 
         console.log({ w32 })
@@ -226,17 +229,22 @@ function App() {
         setKeyless(keyless2)
     }
 
-    const setAddress = (_w3) => {
+    const setAddress = (_w3, _keyless) => {
         // const setAddress = () => {
         console.log('login ', w3);
         setTimeout(() => {
-            _w3.eth.personal.getAccounts().then((addreses) => {
+            _w3.eth.personal.getAccounts().then(async (addreses) => {
                 console.log("personal : ", addreses);
                 if (Array.isArray(addreses) && addreses.length > 0) {
                     const from = addreses.shift();
                     console.log(from);
                     setfromAddr(from);
                     setConnect(true)
+                    const bal = await _w3.eth.getBalance(from);
+                    setUserBalance(bal)
+                    let tokens = await _keyless.getCurrentNetworkTokens()
+                    console.log({ tokens })
+                    setUserAvailableTokens(tokens)
                 }
             });
 
@@ -252,16 +260,84 @@ function App() {
         setSuccMsg('Transaction succeded.');
     }
 
-    const sendTransaction = async () => {
 
-        const toAddress = '0x2723a2756ecb99b3b50f239782876fb595728ac0'.toLowerCase();
-        const contractAddress = '0x101848d5c5bbca18e6b4431eedf6b95e9adf82fa'.toLowerCase();
+    const [messageToSign, setMessageToSign] = useState('')
+    const signMessage = async () => {
+        const message = messageToSign;
+        console.log({ message, messageToSign })
+        const resp = await w3.eth.sign(message, fromAddr);
+
+        console.log(resp);
+        setMessageToSign("")
+    }
+    const onClickConnection = async () => {
+        if (connect) {
+            setKeyless(false)
+            setfromAddr(false)
+            setW3(null)
+            setConnect(false)
+        } else {
+            await init()
+        }
+    }
+    const refreshBalance = async () => {
+        const bal = await w3.eth.getBalance(fromAddr);
+        setUserBalance(bal)
+    }
+
+    const [sendTo, setSendTo] = useState('')
+    const [sendAmount, setSendAmount] = useState(0)
+
+    const sendAmountTransaction = async () => {
+
+        console.log({ sendTo, sendAmount })
+
+        const sendValue = w3.utils.toBN(sendAmount * Math.pow(10, 18));
+        console.log({ sendValue })
+        // data = 0xa9059cbb0000000000000000000000002723a2756ecb99b3b50f239782876fb595728ac00000000000000000000000000000000000000000000000000de0b6b3a7640000
+        const transaction = {
+            'from': fromAddr,
+            'to': sendTo, //to address
+            'value': sendValue,
+            // 'gas': gas,
+            // 'data': data,
+            // 'nonce': nonce,
+            // 'type': '0x2',
+            // 'chainId': 137,
+        };
+
+        console.log('raw txxxxx : ', transaction);
+
+        const resp = await w3.eth.sendTransaction(transaction);
+        console.log({ resp });
+
+        const signedTx = await w3.eth.signTransaction(transaction);
+        console.log('signedTx : ', signedTx);
+
+    }
+
+
+    const [_tokenTo, setTokenTo] = useState('')
+    const [tokenSendTo, setTokenSendTo] = useState('')
+    const [tokenAmount, setTokenAmount] = useState(0)
+
+    const sendTokenAmountTransaction = async () => {
+
+        let tokenTo = JSON.parse(_tokenTo)
+        console.log({ tokenSendTo, _tokenTo, tokenAmount, tokenTo })
+
+        const sendValue = w3.utils.toBN(tokenAmount * Math.pow(10, tokenTo.decimal));
+        console.log({ sendValue })
+
+
+        const toAddress = tokenSendTo
+        const contractAddress = tokenTo.tokenAddress.toLowerCase();
 
         const nonce = await w3.eth.getTransactionCount(fromAddr, 'latest'); // nonce starts counting from 0
 
         const instance = new w3.eth.Contract(abi, contractAddress);
 
-        const sendValue = w3.utils.toBN(0.01 * Math.pow(10, 18));
+        // const sendValue = w3.utils.toBN(0.01 * Math.pow(10, 18));
 
         let data, gas, balance;
 
@@ -283,8 +359,8 @@ function App() {
         const transaction = {
             'from': fromAddr,
             'to': toAddress, //to address
-            'value': 10000,
-            'gas': gas,
+            'value': 0,
+            // 'gas': gas,
             'data': data,
             'nonce': nonce,
             'type': '0x2',
@@ -294,29 +370,13 @@ function App() {
         console.log('raw txxxxx : ', transaction);
 
         const resp = await w3.eth.sendTransaction(transaction);
+        console.log(resp);
 
         const signedTx = await w3.eth.signTransaction(transaction);
         console.log('signedTx : ', signedTx);
 
-        console.log(resp);
     }
 
-    const signMessage = async () => {
-        const message = 'Hello world';
-        const resp = await w3.eth.sign(message, fromAddr);
-
-        console.log(resp);
-    }
-    const onClickConnection = async () => {
-        if (connect) {
-            setKeyless(false)
-            setfromAddr(false)
-            setW3(null)
-            setConnect(false)
-        } else {
-            await init()
-        }
-    }
 
     return (
         <div className="container">
@@ -366,43 +426,52 @@ function App() {
 
                         <div className="inputgroup group_3">
                             <label>Balance</label>
-                            <p>100 ETH</p>
-                            <button>Refresh</button>
+                            <p>{userBalance} ETH</p>
+                            <button onClick={refreshBalance}>Refresh</button>
                         </div>
 
                         <div className="inputgroup group_4">
                             <label>Send</label>
                             <div>
-                                <input type="text" placeholder="To" />
-                                <input type="text" placeholder="Amount" />
+                                <input type="text" placeholder="To" onChange={(e) => setSendTo(e.target.value)} />
+                                <input type="number" placeholder="Amount in eth" onChange={(e) => setSendAmount(e.target.value)} />
 
-                                <button>Go</button>
+                                <button onClick={sendAmountTransaction}>Go</button>
                             </div>
                         </div>
                         <div className="inputgroup group_5">
                             <label>Send Token</label>
                             <div>
-                                <select>
-                                    <option>Chain 1</option>
-                                    <option>Chain 2</option>
-                                    <option>Chain 3</option>
-                                    <option>Chain 4</option>
+                                <select onChange={(e) => { console.log({ e }, JSON.parse(e.target.value), e.target.value); setTokenTo(e.target.value) }}>
+                                    {userAvailableTokens.map(token =>
+                                        <option value={JSON.stringify(token)} key={token.addreses}>{token.symbol}</option>
+                                    )}
                                 </select>
-                                <input type="text" placeholder="Amount" />
+                                <input type="text" placeholder="To" onChange={(e) => setTokenSendTo(e.target.value)} />
+                                <input type="number" placeholder="Amount" onClick={(e) => setTokenAmount(e.target.value)} />
 
-                                <button>Go</button>
+                                <button onClick={sendTokenAmountTransaction}>Go</button>
+                                <button onClick={async () => {
+                                    let tokens = await keyless.getCurrentNetworkTokens()
+                                    console.log({ tokens })
+                                    setUserAvailableTokens(tokens)
+                                }} >Get tokens</button>
                             </div>
                         </div>
                     </div>
                     <div className="right">
                         <div className="actions">
-                            <button>Change Account</button>
-                            <button>Change Chain</button>
+                            <button onClick={async () => {
+                                keyless.selectChain();
+                            }}>Change Account</button>
+                            <button onClick={async () => {
+                                keyless.selectChain();
+                            }}>Change Chain</button>
                         </div>
                         <div className="inputgroup group_6">
                             <label>Sign Message</label>
-                            <input type="text" placeholder="Sign Message" />
-                            <button>Go</button>
+                            <input type="text" placeholder="Sign Message" value={messageToSign} onChange={(e) => setMessageToSign(e.target.value)} />
+                            <button onClick={signMessage}>Go</button>
                         </div>
                         <div className="inputgroup group_7">
                             <label>Signed Message</label>
