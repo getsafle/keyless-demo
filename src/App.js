@@ -6,7 +6,7 @@ import { KeylessWeb3, getNetworks } from '@getsafle/safle-keyless-js'
 
 function App() {
     const [connect, setConnect] = useState(false);
-
+    const [showDropDown, setShowDropDown] = useState(false)
     const [fromAddr, setfromAddr] = useState(false);
     const [userBalance, setUserBalance] = useState(0)
     const [succMsg, setSuccMsg] = useState('');
@@ -212,102 +212,139 @@ function App() {
 
     return (
         <div className="container">
-            <div className="header">
-                <div className="header__logo">
-                    <img src="/SafleLogo.png" />
-                </div>
-                <div className="header__title">
-                    <h1>Safle Keyless Demo</h1>
-                </div>
-                <div
-                    className={
-                        'header__connect ' +
-                        (connect ? 'disconnect' : 'connect')
-                    }
-                    onClick={onClickConnection}
-                // () => setConnect(!connect)}
-                >
-                    <button>
-                        <span className="outer">
-                            <span className="inner">&nbsp;</span>
-                        </span>
-                        {connect ? 'Disconnect' : 'Connect'}
-                    </button>
-                </div>
-            </div>
-            <div className="main">
-                <div className="main__form">
-                    <div className="left">
-                        <div className="inputgroup group_1">
-                            <label>Account Address</label>
-                            <input
-                                type="text"
-                                placeholder="Enter your account address"
-                                value={fromAddr}
-                            />
-                        </div>
-                        <div className="inputgroup group_2">
-                            <label>Selected chain</label>
-                            <input type="text" placeholder="Selected chain" value={selectedChain.chain?.network} disabled />
-                        </div>
-
-                        <div className="inputgroup group_3">
-                            <label>Balance</label>
-                            <p>{userBalance} {selectedChain.chain?.symbol}</p>
-                            <button onClick={refreshBalance}>Refresh</button>
-                        </div>
-
-                        <div className="inputgroup group_4">
-                            <label>Send</label>
-                            <div>
-                                <input type="text" placeholder="To" onChange={(e) => setSendTo(e.target.value)} />
-                                <input type="number" placeholder={`Amount in ${selectedChain.chain?.symbol}`} onChange={(e) => setSendAmount(e.target.value)} />
-
-                                <button onClick={sendAmountTransaction}>Go</button>
-                            </div>
-                        </div>
-                        <div className="inputgroup group_5">
-                            <label>Send Token</label>
-                            <div>
-                                <select onChange={(e) => { console.log({ e }, JSON.parse(e.target.value), e.target.value); setTokenTo(e.target.value) }}>
-                                    {userAvailableTokens.map(token =>
-                                        <option value={JSON.stringify(token)} key={token.addreses}>{token.symbol}</option>
-                                    )}
-                                </select>
-                                <input type="text" placeholder="To" onChange={(e) => setTokenSendTo(e.target.value)} />
-                                <input type="number" placeholder="Token Amount" onClick={(e) => setTokenAmount(e.target.value)} />
-
-                                <button onClick={sendTokenAmountTransaction}>Go</button>
-                                <button onClick={async () => {
-                                    let tokens = await keyless.getCurrentNetworkTokens()
-                                    console.log({ tokens })
-                                    setUserAvailableTokens(tokens)
-                                }} >Get tokens</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="right">
-                        <div className="actions">
-                            <button onClick={async () => {
-                                keyless.selectChain();
-                            }}>Change Account</button>
-                            <button onClick={async () => {
-                                keyless.selectChain();
-                            }}>Change Chain</button>
-                        </div>
-                        <div className="inputgroup group_6">
-                            <label>Sign Message</label>
-                            <input type="text" placeholder="Sign Message" value={messageToSign} onChange={(e) => setMessageToSign(e.target.value)} />
-                            <button onClick={signMessage}>Go</button>
-                        </div>
-                        <div className="inputgroup group_7">
-                            <label>Signature</label>
-                            <input type="text" placeholder="Signature" value={messageSignature} disabled />
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div className="header">
+        <div className="header__logo">
+          <img src="/Safle_Logo.png" />
         </div>
+        <div className="header__title">
+          <h1>Safle Keyless Demo</h1>
+        </div>
+        <div
+          className={"header__connect " + (connect ? "disconnect" : "connect")}
+          onClick={onClickConnection}
+          // () => setConnect(!connect)}
+        >
+          <button>
+            <span className="outer">
+              <span className="inner">&nbsp;</span>
+            </span>
+            {connect ? "Disconnect" : "Connect"}
+          </button>
+        </div>
+      </div>
+      <div className="main">
+        <div className="main__form">
+            <div className="top_box box">
+                <div className="top_box_left">
+                    <div className="button_relative">
+                        <label>Account Address</label>
+                        <input placeholder="Enter your account address" value={fromAddr}/>
+                        <button className="blue_button" onClick={async () => {keyless.selectChain();}}>Change Account</button>
+                    </div>
+                    <div class="button_relative">
+                        <label>Selected chain</label>
+                        <input type="text" placeholder="Selected chain" value={selectedChain.chain?.network}/>
+                        <button className="blue_button" onClick={async () => {keyless.selectChain();}}>Change Chain</button>
+                    </div>
+                    <div>
+                        <label>Balance</label>
+                        <div className="balance">
+                            <p>{userBalance} {selectedChain.chain?.symbol}</p>
+                            <button className="refresh_button" onClick={refreshBalance}>Refresh</button>
+                        </div>
+                    </div>
+                </div>
+                <div className="top_box_right">
+                    <div>
+                        <label>Send</label>
+                        <input type="text" placeholder="To" onChange={(e) => setSendTo(e.target.value)}/>
+                    </div>
+                    <div>
+                        <label>Amount</label>
+                        <input type="number" placeholder={`Amount in ${selectedChain.chain?.symbol ? selectedChain.chain?.symbol : "Matic"}`}
+                            onChange={(e) => setSendAmount(e.target.value)}/>
+                    </div>
+                    <div>
+                        <button className="blue_button button_2" onClick={sendAmountTransaction}>Go</button>
+                    </div>
+                </div>
+            </div>
+          <div className="bottom_box">
+            <div className="bottom_box_left box">
+                <div>
+                    <label>Sign Message</label>
+                    <textArea type="text" placeholder="Sign Message" value={messageToSign} onChange={(e) => setMessageToSign(e.target.value)}/>
+                </div>
+                <div className="signature">
+                    <div>
+                        <label>Signature</label>
+                        <input type="text" placeholder="Signature" value={messageSignature} disabled/>
+                    </div>
+                    <button className="button_2 blue_button" style={{ marginBottom: "16px" }} onClick={signMessage}>Go</button>
+                </div>
+            </div>
+            <div className="bottom_box_right box">
+                <div>
+                    <label>Send Token</label>
+                    <input type="text" placeholder="To" onChange={(e) => setTokenSendTo(e.target.value)}/>
+                </div>
+                <div>
+                    <div className="custom_select_box">
+                        <div className="selected_menu_item">
+                            <p>{_tokenTo}</p>
+                            <div onClick={() => setShowDropDown(!showDropDown)}>
+                            <img src={"/arrow_dropdown_open.png"} />
+                            </div>
+                        </div>
+                        {showDropDown && (
+                            <div className="menu">
+                            <div className="menu_label">Select Token</div>
+                            {userAvailableTokens.map((token) => (
+                                <div
+                                className="menuItems"
+                                value={JSON.stringify(token)}
+                                key={token.addreses}
+                                onClick={() => {
+                                    setShowDropDown(false);
+                                    setTokenTo(token);
+                                }}
+                                style={{
+                                    background: token?.symbol === _tokenTo?.symbol ? "#E5EEFF": "#fff",
+                                    color: token?.symbol === _tokenTo?.symbol ? "#007AFF" : "#6E6F7A",
+                                }}
+                                >
+                                {token.symbol}
+                                </div>
+                            ))}
+                            </div>
+                        )}
+                    </div>
+                    <label style={{ paddingTop: "10px" }}>
+                        Balance: <span style={{ color: "#000", fontWeight: "medium" }}>114.6943 USDT</span>
+                    </label>
+                </div>
+                <div>
+                    <input
+                    type="number"
+                    placeholder="Token Amount"
+                    onClick={(e) => setTokenAmount(e.target.value)}
+                    />
+                </div>
+                <div style={{display: "flex",justifyContent: "space-between",alignItems: "flex-end"}}>
+                    <button className="blue_button" style={{ padding: "14px 0px", width: "55%" }}
+                        onClick={async () => {
+                            let tokens = await keyless.getCurrentNetworkTokens();
+                            console.log({ tokens });
+                            setUserAvailableTokens(tokens);
+                        }}
+                    >Go Tokens</button>
+                    <button className="blue_button button_2" onClick={sendTokenAmountTransaction}>Go</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     );
 }
 
