@@ -141,7 +141,8 @@ function App() {
     }
     const refreshBalance = async () => {
         const bal = await w3.eth.getBalance(fromAddr);
-        setUserBalance(bal)
+        setUserBalance(w3.utils.fromWei(bal, 'ether'))
+        // setUserBalance(bal)
     }
 
     const [sendTo, setSendTo] = useState('')
