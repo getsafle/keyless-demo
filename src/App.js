@@ -27,7 +27,7 @@ function App() {
 
         const rpcUrls = {
             1: 'https://mainnet.infura.io/v3/8faaf4fcbdcc4dd0bee8c87eb4b0315b',
-            3: 'https://ropsten.infura.io/v3/8faaf4fcbdcc4dd0bee8c87eb4b0315b',
+            420: 'https://goerli.infura.io/v3/8faaf4fcbdcc4dd0bee8c87eb4b0315b',
             137: 'https://polygon-mainnet.infura.io/v3/8faaf4fcbdcc4dd0bee8c87eb4b0315b',
             80001: 'https://polygon-mumbai.infura.io/v3/8faaf4fcbdcc4dd0bee8c87eb4b0315b'
         }
@@ -90,6 +90,18 @@ function App() {
         setSuccMsg('Transaction succeded.');
     }
 
+    const setTokenDecimal = (value, decimal) => {
+        if (!value || !decimal) return 0;
+        let val;
+        if (value.length > decimal) {
+            val = value;
+        } else {
+            val = "0".repeat(decimal - value.length + 1) + value;
+        }
+        let res = val.substring(0, val.length - decimal) + "." + val.substring(val.length - decimal);
+        return res;
+    }
+
 
     const [messageToSign, setMessageToSign] = useState('')
     const [messageSignature, setMessageSignature] = useState('')
@@ -105,9 +117,23 @@ function App() {
     }
     const onClickConnection = async () => {
         if (connect) {
-            setKeyless(false)
-            setfromAddr(false)
-            setW3(null)
+
+            keyless.disconnect()
+
+            setSendTo('')
+            setSendAmount(0)
+            setMessageToSign('')
+            setMessageSignature('')
+            setConnect(false);
+            setShowDropDown(false)
+            setfromAddr(false);
+            setUserBalance(0)
+            setSuccMsg('');
+            let logged = false;
+            setW3(null);
+            setKeyless(false);
+            setUserAvailableTokens([])
+            setSelectedChain({ chainId: 0, chain: "" })
             setConnect(false)
         } else {
             await init()
@@ -150,7 +176,7 @@ function App() {
     }
 
 
-    const [_tokenTo, setTokenTo] = useState('')
+    const [_tokenTo, setTokenTo] = useState('{}')
     const [tokenSendTo, setTokenSendTo] = useState('')
     const [tokenAmount, setTokenAmount] = useState(0)
 
@@ -212,139 +238,140 @@ function App() {
 
     return (
         <div className="container">
-      <div className="header">
-        <div className="header__logo">
-          <img src="/Safle_Logo.png" />
-        </div>
-        <div className="header__title">
-          <h1>Safle Keyless Demo</h1>
-        </div>
-        <div
-          className={"header__connect " + (connect ? "disconnect" : "connect")}
-          onClick={onClickConnection}
-          // () => setConnect(!connect)}
-        >
-          <button>
-            <span className="outer">
-              <span className="inner">&nbsp;</span>
-            </span>
-            {connect ? "Disconnect" : "Connect"}
-          </button>
-        </div>
-      </div>
-      <div className="main">
-        <div className="main__form">
-            <div className="top_box box">
-                <div className="top_box_left">
-                    <div className="button_relative">
-                        <label>Account Address</label>
-                        <input placeholder="Enter your account address" value={fromAddr}/>
-                        <button className="blue_button" onClick={async () => {keyless.selectChain();}}>Change Account</button>
-                    </div>
-                    <div class="button_relative">
-                        <label>Selected chain</label>
-                        <input type="text" placeholder="Selected chain" value={selectedChain.chain?.network}/>
-                        <button className="blue_button" onClick={async () => {keyless.selectChain();}}>Change Chain</button>
-                    </div>
-                    <div>
-                        <label>Balance</label>
-                        <div className="balance">
-                            <p>{userBalance} {selectedChain.chain?.symbol}</p>
-                            <button className="refresh_button" onClick={refreshBalance}>Refresh</button>
-                        </div>
-                    </div>
+            <div className="header">
+                <div className="header__logo">
+                    <img src="/Safle_Logo.png" />
                 </div>
-                <div className="top_box_right">
-                    <div>
-                        <label>Send</label>
-                        <input type="text" placeholder="To" onChange={(e) => setSendTo(e.target.value)}/>
-                    </div>
-                    <div>
-                        <label>Amount</label>
-                        <input type="number" placeholder={`Amount in ${selectedChain.chain?.symbol ? selectedChain.chain?.symbol : "Matic"}`}
-                            onChange={(e) => setSendAmount(e.target.value)}/>
-                    </div>
-                    <div>
-                        <button className="blue_button button_2" onClick={sendAmountTransaction}>Go</button>
-                    </div>
+                <div className="header__title">
+                    <h1>Safle Keyless Demo</h1>
+                </div>
+                <div
+                    className={"header__connect " + (connect ? "disconnect" : "connect")}
+                    onClick={onClickConnection}
+                // () => setConnect(!connect)}
+                >
+                    <button>
+                        <span className="outer">
+                            <span className="inner">&nbsp;</span>
+                        </span>
+                        {connect ? "Disconnect" : "Connect"}
+                    </button>
                 </div>
             </div>
-          <div className="bottom_box">
-            <div className="bottom_box_left box">
-                <div>
-                    <label>Sign Message</label>
-                    <textArea type="text" placeholder="Sign Message" value={messageToSign} onChange={(e) => setMessageToSign(e.target.value)}/>
-                </div>
-                <div className="signature">
-                    <div>
-                        <label>Signature</label>
-                        <input type="text" placeholder="Signature" value={messageSignature} disabled/>
-                    </div>
-                    <button className="button_2 blue_button" style={{ marginBottom: "16px" }} onClick={signMessage}>Go</button>
-                </div>
-            </div>
-            <div className="bottom_box_right box">
-                <div>
-                    <label>Send Token</label>
-                    <input type="text" placeholder="To" onChange={(e) => setTokenSendTo(e.target.value)}/>
-                </div>
-                <div>
-                    <div className="custom_select_box">
-                        <div className="selected_menu_item">
-                            <p>{_tokenTo}</p>
-                            <div onClick={() => setShowDropDown(!showDropDown)}>
-                            <img src={"/arrow_dropdown_open.png"} />
+            <div className="main">
+                <div className="main__form">
+                    <div className="top_box box">
+                        <div className="top_box_left">
+                            <div className="button_relative">
+                                <label>Account Address</label>
+                                <input placeholder="Enter your account address" value={fromAddr} />
+                                <button className="blue_button" onClick={async () => { keyless.selectChain(); }}>Change Account</button>
                             </div>
-                        </div>
-                        {showDropDown && (
-                            <div className="menu">
-                            <div className="menu_label">Select Token</div>
-                            {userAvailableTokens.map((token) => (
-                                <div
-                                className="menuItems"
-                                value={JSON.stringify(token)}
-                                key={token.addreses}
-                                onClick={() => {
-                                    setShowDropDown(false);
-                                    setTokenTo(token);
-                                }}
-                                style={{
-                                    background: token?.symbol === _tokenTo?.symbol ? "#E5EEFF": "#fff",
-                                    color: token?.symbol === _tokenTo?.symbol ? "#007AFF" : "#6E6F7A",
-                                }}
-                                >
-                                {token.symbol}
+                            <div class="button_relative">
+                                <label>Selected chain</label>
+                                <input type="text" placeholder="Selected chain" value={selectedChain.chain?.network} />
+                                <button className="blue_button" onClick={async () => { keyless.selectChain(); }}>Change Chain</button>
+                            </div>
+                            <div>
+                                <label>Balance</label>
+                                <div className="balance">
+                                    <p>{userBalance} {selectedChain.chain?.symbol}</p>
+                                    <button className="refresh_button" onClick={refreshBalance}>Refresh</button>
                                 </div>
-                            ))}
                             </div>
-                        )}
+                        </div>
+                        <div className="top_box_right">
+                            <div>
+                                <label>Send</label>
+                                <input type="text" placeholder="To" onChange={(e) => setSendTo(e.target.value)} />
+                            </div>
+                            <div>
+                                <label>Amount</label>
+                                <input type="number" placeholder={`Amount in ${selectedChain.chain?.symbol ? selectedChain.chain?.symbol : "Matic"}`}
+                                    onChange={(e) => setSendAmount(e.target.value)} />
+                            </div>
+                            <div>
+                                <button className="blue_button button_2" onClick={sendAmountTransaction}>Go</button>
+                            </div>
+                        </div>
                     </div>
-                    <label style={{ paddingTop: "10px" }}>
-                        Balance: <span style={{ color: "#000", fontWeight: "medium" }}>114.6943 USDT</span>
-                    </label>
+                    <div className="bottom_box">
+                        <div className="bottom_box_left box">
+                            <div>
+                                <label>Sign Message</label>
+                                <textArea type="text" placeholder="Sign Message" value={messageToSign} onChange={(e) => setMessageToSign(e.target.value)} />
+                            </div>
+                            <div className="signature">
+                                <div>
+                                    <label>Signature</label>
+                                    <input type="text" placeholder="Signature" value={messageSignature} disabled />
+                                </div>
+                                <button className="button_2 blue_button" style={{ marginBottom: "16px" }} onClick={signMessage}>Go</button>
+                            </div>
+                        </div>
+                        <div className="bottom_box_right box">
+                            <div>
+                                <label>Send Token</label>
+                                <input type="text" placeholder="To" onChange={(e) => setTokenSendTo(e.target.value)} />
+                            </div>
+                            <div>
+                                <div className="custom_select_box">
+                                    <div className="selected_menu_item">
+                                        <p>{JSON.parse(_tokenTo)?.symbol}</p>
+                                        <div onClick={() => setShowDropDown(!showDropDown)}>
+                                            <img src={"/arrow_dropdown_open.png"} />
+                                        </div>
+                                    </div>
+                                    {showDropDown && (
+                                        <div className="menu">
+                                            <div className="menu_label">Select Token</div>
+                                            {userAvailableTokens.map((token) => (
+                                                <div
+                                                    className="menuItems"
+                                                    value={token}
+                                                    key={token.addreses}
+                                                    onClick={async () => {
+                                                        setShowDropDown(false);
+                                                        setTokenTo(JSON.stringify(token));
+                                                    }}
+                                                    style={{
+                                                        background: token?.symbol === JSON.parse(_tokenTo)?.symbol ? "#E5EEFF" : "#fff",
+                                                        color: token?.symbol === JSON.parse(_tokenTo)?.symbol ? "#007AFF" : "#6E6F7A",
+                                                    }}
+                                                >
+                                                    {token.symbol}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <label style={{ paddingTop: "10px" }}>
+                                    Balance: <span style={{ color: "#000", fontWeight: "medium" }}>{setTokenDecimal(JSON.parse(_tokenTo)?.balance, JSON.parse(_tokenTo)?.decimal)} {JSON.parse(_tokenTo)?.symbol}</span>
+                                </label>
+                            </div>
+                            <div>
+                                <input
+                                    type="number"
+                                    placeholder="Token Amount"
+                                    onClick={(e) => setTokenAmount(e.target.value)}
+                                    onBlur={(e) => setTokenAmount(e.target.value)}
+                                />
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                                <button className="blue_button" style={{ padding: "14px 0px", width: "55%" }}
+                                    onClick={async () => {
+                                        let tokens = await keyless.getCurrentNetworkTokens();
+                                        console.log({ tokens });
+                                        setUserAvailableTokens(tokens);
+                                    }}
+                                >Go Tokens</button>
+                                <button className="blue_button button_2" onClick={sendTokenAmountTransaction}>Go</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <input
-                    type="number"
-                    placeholder="Token Amount"
-                    onClick={(e) => setTokenAmount(e.target.value)}
-                    />
-                </div>
-                <div style={{display: "flex",justifyContent: "space-between",alignItems: "flex-end"}}>
-                    <button className="blue_button" style={{ padding: "14px 0px", width: "55%" }}
-                        onClick={async () => {
-                            let tokens = await keyless.getCurrentNetworkTokens();
-                            console.log({ tokens });
-                            setUserAvailableTokens(tokens);
-                        }}
-                    >Go Tokens</button>
-                    <button className="blue_button button_2" onClick={sendTokenAmountTransaction}>Go</button>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
     );
 }
 
