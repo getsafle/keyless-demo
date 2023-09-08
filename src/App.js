@@ -20,76 +20,52 @@ function App() {
 
   const init = async () => {
     logged = true;
-    // let networks = await getNetworks();
-
-    // console.log('networkssssssssss : ', networks);
-
-    // const rpcUrls = {
-    //     1: 'https://mainnet.infura.io/v3/8faaf4fcbdcc4dd0bee8c87eb4b0315b',
-    //     420: 'https://goerli.infura.io/v3/8faaf4fcbdcc4dd0bee8c87eb4b0315b',
-    //     137: 'https://polygon-mainnet.infura.io/v3/8faaf4fcbdcc4dd0bee8c87eb4b0315b',
-    //     80001: 'https://polygon-mumbai.infura.io/v3/8faaf4fcbdcc4dd0bee8c87eb4b0315b'
-    // }
-
-    // for (var i in networks) {
-    //     networks[i]['rpcURL'] = rpcUrls[networks[i].chainId];
-    // }
-
-    // console.log(networks);
-
-    // const keyless = new KeylessWeb3({ blockchain: networks });
     let keyless2 = new Keyless("mumbaitestnet");
 
-    let w32 = new Web3(keyless2.provider);
-
-    console.log({ w32 });
-
-    setW3(w32);
-
-    // w32.currentProvider.on('login successful', setAddress);
-    w32.currentProvider.on("login successful", (callFn) =>
-      setAddress(w32, keyless2)
-    );
-    w32.currentProvider.on("transactionSuccess", successTrans);
-
-    console.log({ w32 });
-    // keyless2.login();
     await keyless2.init(true);
 
-    await setAddress(w32, keyless2);
+    keyless2.onLogin((z, chainDetails) => {
+      setAddress(keyless2, z, chainDetails);
+    });
 
-    console.log({ keyless2 });
-    setKeyless(keyless2);
+    keyless2.onLogout(() => {
+      setSendTo("");
+      setSendAmount(0);
+      setMessageToSign("");
+      setMessageSignature("");
+      setConnect(false);
+      setShowDropDown(false);
+      setfromAddr(false);
+      setUserBalance(0);
+      setSuccMsg("");
+      let logged = false;
+      setW3(null);
+      setKeyless(false);
+      setUserAvailableTokens([]);
+      setSelectedChain({ chainId: 0, chain: "" });
+      setConnect(false);
+    });
   };
 
-  const setAddress = (_w3, _keyless) => {
+  const setAddress = (_keylessNew, add, chainDetails) => {
+    if (fromAddr === add) return;
     console.log("INSIDE SETADDRESS");
-    // const setAddress = () => {
     console.log("login ", w3);
-    setTimeout(() => {
-      _w3.eth.getAccounts().then(async (addreses) => {
-        // _w3.eth.personal.getAccounts().then(async (addreses) => {
-        console.log("INSIDE SETADDRESS, ", { addreses });
-        console.log("personal : ", addreses);
-        if (Array.isArray(addreses) && addreses.length > 0) {
-          const from = addreses.shift();
-          console.log(from);
-          setfromAddr(from);
-          setConnect(true);
-          const bal = await _w3.eth.getBalance(from);
-          setUserBalance(_w3.utils.fromWei(bal, "ether"));
-          let tokens = await _keyless.getCurrentNetworkTokens();
-          console.log({ tokens });
-          setUserAvailableTokens(tokens);
+    setTimeout(async () => {
+      const _keyless = await _keylessNew.updateWeb3(chainDetails);
+      let _w3 = new Web3(_keyless.provider);
+      setW3(_w3);
+      setKeyless(_keyless);
 
-          let currentChain = await _keyless.getCurrentChain();
-          setSelectedChain(currentChain);
-        }
-      });
-
-      _w3.eth.personal.getAccounts().then((accounts) => {
-        console.log("getAcc : ", accounts);
-      });
+      const from = add;
+      console.log(from);
+      setfromAddr(from);
+      setConnect(true);
+      const bal = await _w3.eth.getBalance(from);
+      setUserBalance(_w3.utils.fromWei(bal, "ether"));
+      let tokens = await _keyless.getCurrentNetworkTokens();
+      console.log({ tokens });
+      setUserAvailableTokens(tokens);
     }, 200);
   };
 
@@ -129,22 +105,6 @@ function App() {
   const onClickConnection = async () => {
     if (connect) {
       keyless.disconnect();
-
-      setSendTo("");
-      setSendAmount(0);
-      setMessageToSign("");
-      setMessageSignature("");
-      setConnect(false);
-      setShowDropDown(false);
-      setfromAddr(false);
-      setUserBalance(0);
-      setSuccMsg("");
-      let logged = false;
-      setW3(null);
-      setKeyless(false);
-      setUserAvailableTokens([]);
-      setSelectedChain({ chainId: 0, chain: "" });
-      setConnect(false);
     } else {
       await init();
     }
@@ -315,17 +275,24 @@ function App() {
               </div>
             </div>
 
-            
             <button
-                  className="blue_button"
-                  onClick={async () => {
-                    setAddress(w3, keyless)
-                    // keyless.selectChain();
-                  }}
-                >
-                  Get Account
-                </button>
+              className="blue_button"
+              onClick={async () => {
+                setAddress(w3, keyless);
+                // keyless.selectChain();
+              }}
+            >
+              Get Account
+            </button>
 
+            {/* <button
+              className="blue_button"
+              onClick={async () => {
+                keyless.openDashboard();
+              }}
+            >
+              Open dashboard
+            </button> */}
 
             <div className="top_box_right">
               <div>
