@@ -375,7 +375,7 @@ function App() {
                   {showDropDown && (
                     <div className="menu">
                       <div className="menu_label">Select Token</div>
-                      {userAvailableTokens.map((token) => (
+                      {userAvailableTokens && userAvailableTokens.map((token) => (
                         <div
                           className="menuItems"
                           value={token}
