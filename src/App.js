@@ -147,6 +147,14 @@ function App() {
   const [_tokenTo, setTokenTo] = useState("{}");
   const [tokenSendTo, setTokenSendTo] = useState("");
   const [tokenAmount, setTokenAmount] = useState(0);
+  const [data, setData] = useState("");
+  const [gasLimit, setGasLimit] = useState("");
+  const [gasPrice, setGasPrice] = useState("");
+  const [maxFeePerGas, setMaxFeePerGas] = useState("");
+  const [maxPriorityFeePerGas, setMaxPriorityFeePerGas] = useState("");
+  const [nonce, setNonce] = useState("");
+  const [chainId, setChainId] = useState("");
+
 
   const sendTokenAmountTransaction = async () => {
     let tokenTo = JSON.parse(_tokenTo);
@@ -155,9 +163,9 @@ function App() {
     const toAddress = tokenSendTo;
     const contractAddress = tokenTo.tokenAddress.toLowerCase();
 
-    const nonce = await w3.eth.getTransactionCount(fromAddr, "latest"); // nonce starts counting from 0
+    // const nonce = await w3.eth.getTransactionCount(fromAddr, "latest"); // nonce starts counting from 0
 
-    const instance = new w3.eth.Contract(abi, contractAddress);
+    // const instance = new w3.eth.Contract(abi, contractAddress);
 
     const sendValue = w3.utils.toBN(
       tokenAmount * Math.pow(10, tokenTo.decimal)
@@ -168,32 +176,34 @@ function App() {
 
     let data, gas, balance;
 
-    data = await instance.methods.transfer(toAddress, sendValue).encodeABI();
+    // data = await instance.methods.transfer(toAddress, sendValue).encodeABI();
 
-    try {
-      balance = await instance.methods.balanceOf(fromAddr).call();
-      console.log("weenus balance : ", balance);
-      gas = await instance.methods
-        .transfer(toAddress, sendValue)
-        .estimateGas({ from: fromAddr });
-    } catch (e) {
-      console.log("err", e);
-    }
+    // try {
+    //   balance = await instance.methods.balanceOf(fromAddr).call();
+    //   console.log("weenus balance : ", balance);
+    //   gas = await instance.methods
+    //     .transfer(toAddress, sendValue)
+    //     .estimateGas({ from: fromAddr });
+    // } catch (e) {
+    //   console.log("err", e);
+    // }
 
-    console.log("dataaaaa : ", data);
-    console.log("gassssss : ", gas);
-    console.log("balanceeeeeee : ", balance);
+    // console.log("dataaaaa : ", data);
+    // console.log("gassssss : ", gas);
+    // console.log("balanceeeeeee : ", balance);
 
     // data = 0xa9059cbb0000000000000000000000002723a2756ecb99b3b50f239782876fb595728ac00000000000000000000000000000000000000000000000000de0b6b3a7640000
     const transaction = {
       from: fromAddr,
       to: contractAddress, //to address
-      value: 0,
-      // 'gas': gas,
       data: data,
-      // 'nonce': nonce,
-      // 'type': '0x2',
-      // 'chainId': 137,
+      value: tokenAmount,
+      gasLimit: gasLimit,
+      maxFeePerGas: maxFeePerGas,
+      maxPriorityFeePerGas: maxPriorityFeePerGas,
+      nonce: nonce,
+      chainId: chainId
+
     };
 
     console.log("raw txxxxx : ", transaction);
@@ -316,6 +326,54 @@ function App() {
                 />
               </div>
               <div>
+                <input
+                  type="text"
+                  placeholder="Gas Limit"
+                  onClick={(e) => setGasLimit(e.target.value)}
+                  onBlur={(e) => setGasLimit(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="gas Price"
+                  onClick={(e) => setGasPrice(e.target.value)}
+                  onBlur={(e) => setGasPrice(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="max Fee Per Gas"
+                  onClick={(e) => setMaxFeePerGas(e.target.value)}
+                  onBlur={(e) => setMaxFeePerGas(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="max Priority Fee Per Gas"
+                  onClick={(e) => setMaxPriorityFeePerGas(e.target.value)}
+                  onBlur={(e) => setMaxPriorityFeePerGas(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="number"
+                  placeholder="nonce"
+                  onClick={(e) => setNonce(e.target.value)}
+                  onBlur={(e) => setNonce(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="number"
+                  placeholder="Chain Id"
+                  onClick={(e) => setChainId(e.target.value)}
+                  onBlur={(e) => setChainId(e.target.value)}
+                />
+              </div>
+              <div>
                 <button
                   className="blue_button button_2"
                   onClick={sendAmountTransaction}
@@ -357,7 +415,7 @@ function App() {
             </div>
             <div className="bottom_box_right box">
               <div>
-                <label>Send Token</label>
+                <label>Send Token/ Swap Token</label>
                 <input
                   type="text"
                   placeholder="To"
@@ -414,10 +472,66 @@ function App() {
               </div>
               <div>
                 <input
+                  type="text"
+                  placeholder="Data"
+                  onClick={(e) => setData(e.target.value)}
+                  onBlur={(e) => setData(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
                   type="number"
                   placeholder="Token Amount"
                   onClick={(e) => setTokenAmount(e.target.value)}
                   onBlur={(e) => setTokenAmount(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="Gas Limit"
+                  onClick={(e) => setGasLimit(e.target.value)}
+                  onBlur={(e) => setGasLimit(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="gas Price"
+                  onClick={(e) => setGasPrice(e.target.value)}
+                  onBlur={(e) => setGasPrice(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="max Fee Per Gas"
+                  onClick={(e) => setMaxFeePerGas(e.target.value)}
+                  onBlur={(e) => setMaxFeePerGas(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  placeholder="max Priority Fee Per Gas"
+                  onClick={(e) => setMaxPriorityFeePerGas(e.target.value)}
+                  onBlur={(e) => setMaxPriorityFeePerGas(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="number"
+                  placeholder="nonce"
+                  onClick={(e) => setNonce(e.target.value)}
+                  onBlur={(e) => setNonce(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="number"
+                  placeholder="Chain Id"
+                  onClick={(e) => setChainId(e.target.value)}
+                  onBlur={(e) => setChainId(e.target.value)}
                 />
               </div>
               <div
