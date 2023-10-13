@@ -115,17 +115,15 @@ function App() {
     // setUserBalance(bal)
   };
 
-  const [sendTo, setSendTo] = useState("");
-  const [sendAmount, setSendAmount] = useState(0);
-
-  const [_tokenTo, setTokenTo] = useState("{}");
+  const [sendTo, setSendTo] = useState('')
+  const [sendAmount, setSendAmount] = useState(0)
   const [tokenSendTo, setTokenSendTo] = useState("");
   const [tokenAmount, setTokenAmount] = useState(0);
-  const [data, setData] = useState("");
   const [gasLimit, setGasLimit] = useState("");
   const [gasPrice, setGasPrice] = useState("");
   const [maxFeePerGas, setMaxFeePerGas] = useState("");
   const [maxPriorityFeePerGas, setMaxPriorityFeePerGas] = useState("");
+  const [contractAddress, setContractAddress] = useState("");
 
 
   const sendAmountTransaction = async () => {
@@ -140,7 +138,6 @@ function App() {
     let chainId =  Number(await w3.eth.getChainId())
     console.log("chainId =", chainId);
 
-    // data = 0xa9059cbb0000000000000000000000002723a2756ecb99b3b50f239782876fb595728ac00000000000000000000000000000000000000000000000000de0b6b3a7640000
     const transaction = {
       from: fromAddr,
       to: sendTo, //to address
@@ -173,50 +170,27 @@ function App() {
 
 
   const sendTokenAmountTransaction = async () => {
-    // let tokenTo = JSON.parse(_tokenTo);
-    // console.log({ tokenSendTo, _tokenTo, tokenAmount, tokenTo });
-
-    // const toAddress = tokenSendTo;
-    // const contractAddress = tokenTo.tokenAddress.toLowerCase();
-    // const instance = new w3.eth.Contract(abi, contractAddress);
-
-    // const sendValue = w3.utils.toBN(
-    //   tokenAmount * Math.pow(10, tokenTo.decimal)
-    // );
-    // console.log({ sendValue });
-
-    // const sendValue = w3.utils.toBN(0.01 * Math.pow(10, 18));
-
-    // let data, gas, balance;
-
-    // data = await instance.methods.transfer(toAddress, sendValue).encodeABI();
-
-    // try {
-    //   balance = await instance.methods.balanceOf(fromAddr).call();
-    //   console.log("weenus balance : ", balance);
-    //   gas = await instance.methods
-    //     .transfer(toAddress, sendValue)
-    //     .estimateGas({ from: fromAddr });
-    // } catch (e) {
-    //   console.log("err", e);
-    // }
-
-    // console.log("dataaaaa : ", data);
-    // console.log("gassssss : ", gas);
-    // console.log("balanceeeeeee : ", balance);
-
-    // data = 0xa9059cbb0000000000000000000000002723a2756ecb99b3b50f239782876fb595728ac00000000000000000000000000000000000000000000000000de0b6b3a7640000
     
     console.log("selectedChain.chainId = ", selectedChain);
     const nonce = await w3.eth.getTransactionCount(fromAddr, "latest");
 
     let chainId = Number(await w3.eth.getChainId())
-    
+
+    const instance = new w3.eth.Contract(abi, contractAddress);
+    let decimals = await instance.methods.decimals().call();
+
+    const sendValue = w3.utils.toBN(tokenAmount * Math.pow(10, decimals));
+    const data = await instance.methods.transfer(tokenSendTo, sendValue).encodeABI();
+
+    console.log("decimals = ", decimals);
+
+    console.log({ sendValue })
+
     const transaction = {
       from: fromAddr,
-      to: tokenSendTo, //to address
+      to: contractAddress, //to address
       data: data,
-      value: tokenAmount,
+      value: '0x0',
       gasLimit: gasLimit,
       gasPrice: gasPrice,
       maxFeePerGas: maxFeePerGas,
@@ -225,7 +199,9 @@ function App() {
       chainId: chainId
     };
 
-    if (chainId === '1' || chainId === '137' ) {
+    console.log("chainId = ",chainId, typeof chainId);
+
+    if (chainId === 1 || chainId === 137 ) {
       delete transaction.gasPrice
       transaction['type'] = "0x2"
     }
@@ -438,60 +414,14 @@ function App() {
                 />
               </div>
               <div>
-                <div className="custom_select_box">
-                  <div className="selected_menu_item">
-                    <p>{JSON.parse(_tokenTo)?.symbol}</p>
-                    <div onClick={() => setShowDropDown(!showDropDown)}>
-                      <img src={"/arrow_dropdown_open.png"} />
-                    </div>
-                  </div>
-                  {showDropDown && (
-                    <div className="menu">
-                      <div className="menu_label">Select Token</div>
-                      {userAvailableTokens && userAvailableTokens.map((token) => (
-                        <div
-                          className="menuItems"
-                          value={token}
-                          key={token.addreses}
-                          onClick={async () => {
-                            setShowDropDown(false);
-                            setTokenTo(JSON.stringify(token));
-                          }}
-                          style={{
-                            background:
-                              token?.symbol === JSON.parse(_tokenTo)?.symbol
-                                ? "#E5EEFF"
-                                : "#fff",
-                            color:
-                              token?.symbol === JSON.parse(_tokenTo)?.symbol
-                                ? "#007AFF"
-                                : "#6E6F7A",
-                          }}
-                        >
-                          {token.symbol}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <label style={{ paddingTop: "10px" }}>
-                  Balance:{" "}
-                  <span style={{ color: "#000", fontWeight: "medium" }}>
-                    {setTokenDecimal(
-                      JSON.parse(_tokenTo)?.balance,
-                      JSON.parse(_tokenTo)?.decimal
-                    )}{" "}
-                    {JSON.parse(_tokenTo)?.symbol}
-                  </span>
-                </label>
-              </div>
               <div>
                 <input
                   type="text"
-                  placeholder="Data"
-                  onClick={(e) => setData(e.target.value)}
-                  onBlur={(e) => setData(e.target.value)}
+                  placeholder="Contract address"
+                  onClick={(e) => setContractAddress(e.target.value)}
+                  onBlur={(e) => setContractAddress(e.target.value)}
                 />
+              </div>
               </div>
               <div>
                 <input
