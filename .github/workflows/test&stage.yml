@@ -1,0 +1,39 @@
+name: test/stage branch
+on: 
+  pull_request:
+    types:
+      - closed  
+    branches:
+      - test
+      - stage
+
+env:
+  DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+  DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+  DOCKER_HUB_ORG_NAME: ${{ secrets.DOCKER_HUB_ORG_NAME }}
+  APP_TAG_PREFIX: ${{ secrets.APP_TAG_PREFIX }}
+  BB_TAG_USERNAME: ${{ secrets.BB_TAG_USERNAME }}
+  BB_TAG_USER_EMAIL: ${{ secrets.BB_TAG_USER_EMAIL }}
+  BITBUCKET_ACCESS_SECRET: ${{ secrets.BITBUCKET_ACCESS_SECRET }}
+  BITBUCKET_ACCESS_KEY: ${{ secrets.BITBUCKET_ACCESS_KEY }}
+  TAG_NUMBER: "${{ github.run_number }}"
+
+jobs:
+  CI:  
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+    - name: Code checkout
+      uses: actions/checkout@v2 
+    
+    - name: Script Testing
+      uses: skx/github-action-tester@master 
+      with:
+        script: ./ops/ci/push-docker-image-dockerhub.sh
+
+    - name: Pushing to Dockerhub
+      run: |
+        docker login -u ${{ secrets.DOCKER_HUB_USER }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
+        chmod +x ${GITHUB_WORKSPACE}/ops/ci/push-docker-image-dockerhub.sh
+        bash ${GITHUB_WORKSPACE}/ops/ci/push-docker-image-dockerhub.sh /${GITHUB_WORKSPACE}
+      shell: bash
