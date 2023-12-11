@@ -48,6 +48,8 @@ function App() {
   };
 
   const setAddress = (_keylessNew, add, chainDetails) => {
+
+    console.log("_keylessNew, add, chainDetails ", _keylessNew, add, chainDetails)
     if (fromAddr === add) return;
     console.log("INSIDE SETADDRESS");
     console.log("login ", w3);
@@ -96,11 +98,15 @@ function App() {
   const signMessage = async () => {
     const message = messageToSign;
     console.log({ message, messageToSign, message, fromAddr });
-    const resp = await w3.eth.sign(message, fromAddr);
-
-    console.log(resp);
-    setMessageToSign("");
-    setMessageSignature(resp.signature);
+    try{
+      const resp = await w3.eth.sign(message, fromAddr);
+      
+      console.log(resp);
+      setMessageToSign("");
+      setMessageSignature(resp.signature);
+    } catch(e){
+      console.log({e})
+    }
   };
   const onClickConnection = async () => {
     if (connect) {
@@ -125,11 +131,44 @@ function App() {
   const [maxPriorityFeePerGas, setMaxPriorityFeePerGas] = useState("");
   const [contractAddress, setContractAddress] = useState("");
 
+  const convertToNumberString = (num) =>{
+    if(`${num}`.indexOf('e+') !== -1){
+      const arr = `${num}`.split("e+");
+      const zeros = Number(arr.pop())
+      const base = arr[0]
+
+      if(base.indexOf(".") === -1) {
+        return base + "0".repeat(zeros)
+      } else {
+
+        const newArr = base.split(".")
+
+        const newBase = newArr[0];
+
+        const decimalNumber = newArr[1];
+
+        return base + decimalNumber + "0".repeat(zeros - decimalNumber.length)
+      }
+
+    }
+    else {
+      return `${num}`
+    }
+  }
 
   const sendAmountTransaction = async () => {
+    try{
     console.log({ sendTo, sendAmount });
 
-    const sendValue = w3.utils.toBN(sendAmount * Math.pow(10, 18));
+
+    const rBN = `${sendAmount * Math.pow(10, 18)}`;
+    console.log({rBN, tr: typeof rBN})
+
+    const r = convertToNumberString(rBN)
+
+    console.log({r})
+
+    const sendValue = w3.utils.toBN(r)
     console.log({ sendValue });
     const nonce = await w3.eth.getTransactionCount(fromAddr, "latest"); // nonce starts counting from 0
 
@@ -142,10 +181,10 @@ function App() {
       from: fromAddr,
       to: sendTo, //to address
       value: sendValue,
-      gasLimit: gasLimit,
-      gasPrice: gasPrice,
-      maxFeePerGas: maxFeePerGas,
-      maxPriorityFeePerGas: maxPriorityFeePerGas,
+      // gasLimit: gasLimit,
+      // gasPrice: gasPrice,
+      // maxFeePerGas: maxFeePerGas,
+      // maxPriorityFeePerGas: maxPriorityFeePerGas,
       nonce: nonce,
       chainId: chainId
     };
@@ -166,6 +205,9 @@ function App() {
 
     const signedTx = await w3.eth.signTransaction(transaction);
     console.log("signedTx : ", signedTx);
+  }catch(e) {
+    console.log({e})
+  }
   };
 
 
@@ -179,7 +221,14 @@ function App() {
     const instance = new w3.eth.Contract(abi, contractAddress);
     let decimals = await instance.methods.decimals().call();
 
-    const sendValue = w3.utils.toBN(tokenAmount * Math.pow(10, decimals));
+    const rBN= `${tokenAmount * Math.pow(10, decimals)}`
+    console.log({rBN, tr: typeof rBN})
+
+    const r = convertToNumberString(rBN)
+
+    console.log({r})
+
+    const sendValue = w3.utils.toBN(r);
     const data = await instance.methods.transfer(tokenSendTo, sendValue).encodeABI();
 
     console.log("decimals = ", decimals);
@@ -191,10 +240,10 @@ function App() {
       to: contractAddress, //to address
       data: data,
       value: '0x0',
-      gasLimit: gasLimit,
-      gasPrice: gasPrice,
-      maxFeePerGas: maxFeePerGas,
-      maxPriorityFeePerGas: maxPriorityFeePerGas,
+      // gasLimit: gasLimit,
+      // gasPrice: gasPrice,
+      // maxFeePerGas: maxFeePerGas,
+      // maxPriorityFeePerGas: maxPriorityFeePerGas,
       nonce: nonce,
       chainId: chainId
     };
